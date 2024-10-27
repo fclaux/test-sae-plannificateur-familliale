@@ -1,42 +1,49 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TextInput, Button, Text, FlatList, TouchableOpacity } from 'react-native';
+import Task from '@/models/Task';
 
 export default function TabTwoScreen() {
   const [taskId, setTaskId] = useState(0);
-  const [task, setTask] = useState('');
-  const [tasks, setTasks] = useState<{ key: string, value: string }[]>([]);
-  const [completedTasks, setCompletedTasks] = useState<{ key: string, value: string }[]>([]);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
 
   const handleAddTask = () => {
-    if (task.trim()) {
-      setTasks([...tasks, { key: taskId.toString(), value: task }]);
-      setTask(''); // Réinitialise le champ d'entrée
-      setTaskId(taskId+1)
+    if (taskTitle.trim()) {
+      const newTask = new Task(taskId, taskTitle, new Date());
+      setTasks([...tasks, newTask]);
+      setTaskTitle(''); // Réinitialise le champ d'entrée pour le titre
+      setTaskDescription(''); // Réinitialise le champ d'entrée pour la description
+      setTaskId(taskId + 1);
     }
   };
 
-  const handleDeleteTask = (taskKey: string) => {
-    setTasks(tasks.filter((t) => t.key !== taskKey));
+  const handleDeleteTask = (taskKey: number) => {
+    setTasks(tasks.filter((t) => t.id !== taskKey));
   };
 
-  const handleDeleteCompletedTask = (taskKey: string) => {
-    setCompletedTasks(completedTasks.filter((t) => t.key !== taskKey));
+  const handleDeleteCompletedTask = (taskKey: number) => {
+    setCompletedTasks(completedTasks.filter((t) => t.id !== taskKey));
   };
 
-  const handleAddCompletedTask = (taskKey: string) => {
-    const taskToComplete = tasks.find(t => t.key === taskKey);
+  const handleAddCompletedTask = (taskKey: number) => {
+    const taskToComplete = tasks.find((t) => t.id === taskKey);
     if (taskToComplete) {
-      setCompletedTasks([...completedTasks, { key: taskToComplete.key, value: taskToComplete.value }]);
+      taskToComplete.markAsDone();
+      setCompletedTasks([...completedTasks, taskToComplete]);
+      setTasks(tasks.filter((t) => t.id !== taskKey));
     }
-  }
+  };
 
-  const handleUncompletedTask = (taskKey: string) => {
-    const taskToUncomplete = completedTasks.find(t => t.key === taskKey);
+  const handleUncompletedTask = (taskKey: number) => {
+    const taskToUncomplete = completedTasks.find((t) => t.id === taskKey);
     if (taskToUncomplete) {
-      setTasks([...tasks, { key: taskToUncomplete.key, value: taskToUncomplete.value }]);
-      handleDeleteCompletedTask(taskToUncomplete.key);
+      taskToUncomplete.markAsNotDone();
+      setTasks([...tasks, taskToUncomplete]);
+      handleDeleteCompletedTask(taskToUncomplete.id);
     }
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -44,40 +51,49 @@ export default function TabTwoScreen() {
       <TextInput
         style={styles.input}
         placeholder="Ajouter une tâche..."
-        value={task}
-        onChangeText={setTask}
+        value={taskTitle}
+        onChangeText={setTaskTitle}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Ajouter une description..."
+        value={taskDescription}
+        onChangeText={setTaskDescription}
       />
       <Button title="Ajouter" onPress={handleAddTask} color="#00796b" />
       <Text style={styles.sectionTitle}>Tâches en cours</Text>
       <FlatList
         data={tasks}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => {
-            handleAddCompletedTask(item.key);
-            handleDeleteTask(item.key);
-          }}>
+          <TouchableOpacity
+            onPress={() => {
+              handleAddCompletedTask(item.id);
+            }}
+          >
             <View style={styles.taskItem}>
-              <Text>{item.value}</Text>
-              <TouchableOpacity onPress={() => handleDeleteTask(item.key)}>
+              <Text>{item.description}</Text>
+              <TouchableOpacity onPress={() => handleDeleteTask(item.id)}>
                 <Text style={styles.deleteButton}>❌</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         )}
+        keyExtractor={(item) => item.id.toString()}
       />
       <Text style={styles.sectionTitle}>Tâches terminées</Text>
       <FlatList
         data={completedTasks}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleUncompletedTask(item.key)}>
+          <TouchableOpacity onPress={() => handleUncompletedTask(item.id)}>
             <View style={styles.completedTaskItem}>
-              <Text style={styles.completedTaskText}>{item.value}</Text>
-              <TouchableOpacity  onPress={() => handleDeleteCompletedTask(item.key)}>
+              <Text style={styles.completedTaskText}>{item.description}</Text>
+              <TouchableOpacity onPress={() => handleDeleteCompletedTask(item.id)}>
                 <Text style={styles.deleteButton}>❌</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         )}
+        keyExtractor={(item) => item.id.toString()}
       />
     </View>
   );
